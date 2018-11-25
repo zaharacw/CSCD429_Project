@@ -8,11 +8,13 @@ Set the filename for your local file location
 ```{r}
 fileName <-"/home/dev/CSCD429_Project/Data/DJIA_table.csv"
 saveFile <-"/home/dev/CSCD429_Project/Data/DJIA_labels.csv"
+imagesBase <- "/home/dev/CSCD429_Project/Images/"
 ```
 
 Read in the stock data and transform the Date column into actual dates
 ```{r}
 library(dplyr)
+library(ggplot2)
 stocks <- read.csv(file=fileName, header=TRUE, sep=",", stringsAsFactors = FALSE)
 stocks <- mutate(stocks, Date=as.Date(Date))
 ```
@@ -143,10 +145,21 @@ table(stocks$SpreadCat)
 Finally here are just some histograms to visualize the data
 
 ```{r}
+pdf(paste(imagesBase,"SpeadHist.pdf", sep = ""))
 hist(stocks$Spread, breaks=50)
+dev.off()
+
+pdf(paste(imagesBase,"DailyMoveHist.pdf", sep = ""))
 hist(stocks$DailyMove, breaks=50)
+dev.off()
+
+pdf(paste(imagesBase,"CloseDiffHist.pdf", sep = ""))
 hist(stocks$CloseDiff, breaks=50)
+dev.off()
+
+pdf(paste(imagesBase,"OverNightHist.pdf", sep = ""))
 hist(stocks$ONDiff, breaks=50)
+dev.off()
 ```
 
 ```{r}
