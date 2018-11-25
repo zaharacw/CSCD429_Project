@@ -6,27 +6,31 @@ output: html_document
 Set the filename for your local file location
 
 ```{r}
-fileName <-"/home/dev/CSCD429_Project/DJIA_table.csv"
+fileName <-"/home/dev/CSCD429_Project/Data/DJIA_table.csv"
+saveFile <-"/home/dev/CSCD429_Project/Data/DJIA_labels.csv"
+imagesBase <- "/home/dev/CSCD429_Project/Images/"
 ```
 
 Read in the stock data and transform the Date column into actual dates
 ```{r}
 library(dplyr)
+library(ggplot2)
 stocks <- read.csv(file=fileName, header=TRUE, sep=",", stringsAsFactors = FALSE)
 stocks <- mutate(stocks, Date=as.Date(Date))
 ```
 
 Set the cut off date we want to use to separate our training and testing data
 ```{r}
-cutOffDate <- as.Date("2016-01-01")
-```
-Separate the data
-```{r}
-stock_train <- subset(stocks,Date<cutOffDate)
-stock_test <- subset(stocks, Date>=cutOffDate)
+cutOffDate <- as.Date("2015-01-01")
 ```
 
-Export the training and testing data so we can share it - currently commented out since we don't need to do this every time
+Allows separation of Test and Train data if desired
+```{r}
+#stock_train <- subset(stocks,Date<cutOffDate)
+#stock_test <- subset(stocks, Date>=cutOffDate)
+```
+
+Export the training and testing data so we can share it
 ```{r}
 #write.csv(stock_train, file="/home/dev/CSCD429_Project/DJIA_training.csv", row.names=FALSE, na="", sep=",")
 #write.csv(stock_test, file="/home/dev/CSCD429_Project/DJIA_test.csv", row.names=FALSE, na="", sep=",")
@@ -34,10 +38,9 @@ Export the training and testing data so we can share it - currently commented ou
 
 Addings some new columns: the daily spread of the data (high - low), the movement within the day itself (open - close), the difference between the previous close and the current close, and the difference bewteen the previous close and the current opening
 ```{r}
-stock_train$Spread <- stock_train$High - stock_train$Low
-stock_train$DailyMove <- stock_train$Open - stock_train$Close
-
 dailyDiffs <- function(x) {
+  x$Spread <- x$High - x$Low
+  x$DailyMove <- x$Open - x$Close
   for (i in 1:(dim(x)[1] - 1)) {
     x$CloseDiff[i] <- x$Close[i+1] - x$Close[i]
     x$ONDiff[i] <- x$Close[i+1] - x$Open[i]
@@ -48,48 +51,55 @@ dailyDiffs <- function(x) {
   }
   return(x)
 }
-stock_train <- dailyDiffs(stock_train)
+
+stocks <- dailyDiffs(stocks)
 ```
 
 Now lets add some additional data, standard deviation, mean, median
 ```{r}
-stock_stats <- data.frame(colnames(stock_train)[-1])
-colnames(stock_stats)[1] <- 'Name'
-rownames(stock_stats) <- stock_stats$Name
-
-std <- c();
-train_mean <- c()
-train_med <- c() 
-for (i in 1:(dim(stock_stats)[1])) {
-  std[i] <- (var(stock_train[[as.character(stock_stats$Name[i])]], na.rm=TRUE)^(1/2))
-  train_mean[i] <- (mean(stock_train[[as.character(stock_stats$Name[i])]], na.rm=TRUE))
-  train_med[i] <- (median(stock_train[[as.character(stock_stats$Name[i])]], na.rm=TRUE))
+generateStats <- function(x){
+  stock_stats <- data.frame(colnames(x)[-1])
+  colnames(stock_stats)[1] <- 'Name'
+  rownames(stock_stats) <- stock_stats$Name
+  
+  std <- c();
+  train_mean <- c()
+  train_med <- c() 
+  for (i in 1:(dim(stock_stats)[1])) {
+    std[i] <- (var(x[[as.character(stock_stats$Name[i])]], na.rm=TRUE)^(1/2))
+    train_mean[i] <- (mean(x[[as.character(stock_stats$Name[i])]], na.rm=TRUE))
+    train_med[i] <- (median(x[[as.character(stock_stats$Name[i])]], na.rm=TRUE))
+  }
+  
+  stock_stats$StandardDev <- std
+  stock_stats$Mean <- train_mean
+  stock_stats$Median <- train_med
+  
+  return(stock_stats)
 }
 
-stock_stats$StandardDev <- std
-stock_stats$Mean <- train_mean
-stock_stats$Median <- train_med
+stock_stats <- generateStats(stocks)
 ```
 
 Now lets do some labeling of the movements and values. Right now these cuts are arbitrary, we should decice where and how we want to categorize
 ```{r}
 rownames(stock_stats) <- stock_stats$Name
 
-getLabel <- function(value, standardDev) {
+getLabel <- function(value, mean, standardDev, extreme, large, standard) {
   label <- ""
   if (is.na(value) || is.na(standardDev)) {
     label <- NULL
-  } else if (value < -3 * standardDev) {
+  } else if (value < mean + (-1 * extreme * standardDev)) {
     label <- "Down Extreme"
-  } else if (value < -1.5 * standardDev) {
+  } else if (value < mean + (-1 * large * standardDev)) {
     label <- "Down Large"
-  } else if (value < -0.1 * standardDev) {
+  } else if (value < mean + (-1 * standard * standardDev)) {
     label <- "Down"
-  } else if (value < 0.1 * standardDev) {
+  } else if (value < mean + (standard * standardDev)) {
     label <- "No Move"
-  } else if (value < 1.5 * standardDev) {
+  } else if (value < mean + (large * standardDev)) {
     label <- "Up"
-  } else if (value < 3 * standardDev) {
+  } else if (value < mean + (extreme * standardDev)) {
     label <- "Up Large"
   } else {
     label <- "Up Extreme"
@@ -98,27 +108,62 @@ getLabel <- function(value, standardDev) {
   return(label)
 }
 
-for (i in 1:(dim(stock_train)[1] - 1)) {
-  stock_train$DailyMoveCat[i] <- getLabel(stock_train$DailyMove[i], stock_stats["DailyMove","StandardDev"])
-  stock_train$CloseDiffCat[i] <- getLabel(stock_train$CloseDiff[i], stock_stats["CloseDiff","StandardDev"])
-  stock_train$ONDiffCat[i] <- getLabel(stock_train$ONDiff[i], stock_stats["ONDiff","StandardDev"])
+applyLabels <- function(data, stats){
+  for (i in 1:(dim(data)[1] - 1)) {
+    data$DailyMoveCat[i] <- getLabel(data$DailyMove[i], 0, stats["DailyMove","StandardDev"], 3, 1.5, 0.1)
+    data$CloseDiffCat[i] <- getLabel(data$CloseDiff[i], 0, stats["CloseDiff","StandardDev"], 3, 1.5, 0.1)
+    data$ONDiffCat[i] <- getLabel(data$ONDiff[i], 0, stats["ONDiff","StandardDev"], 3, 1.5, 0.1)
+    data$SpreadCat[i] <- getLabel(data$Spread[i], stats["Spread","Mean"], stats["Spread","StandardDev"], 3, 1.5, 0.1)
+  }
+  
+  return(data)
 }
 
-labels <- c("Down Extreme", "Down Large", "Down", "No Move", "Up", "Up Large", "Up Extreme")
-stock_train$DailyMoveCat <-factor(stock_train$DailyMoveCat, levels=labels, ordered = TRUE)
-stock_train$CloseDiffCat <-factor(stock_train$CloseDiffCat, levels=labels, ordered = TRUE)
-stock_train$ONDiffCat <-factor(stock_train$ONDiffCat, levels=labels, ordered = TRUE)
+stocks <- applyLabels(stocks, stock_stats)
+```
 
-table(stock_train$DailyMoveCat)
-table(stock_train$CloseDiffCat)
-table(stock_train$ONDiffCat)
+
+```{r}
+factorize <- function(data) {
+  labels <- c("Down Extreme", "Down Large", "Down", "No Move", "Up", "Up Large", "Up Extreme")
+  data$DailyMoveCat <-factor(data$DailyMoveCat, levels=labels, ordered = TRUE)
+  data$CloseDiffCat <-factor(data$CloseDiffCat, levels=labels, ordered = TRUE)
+  data$ONDiffCat <-factor(data$ONDiffCat, levels=labels, ordered = TRUE)
+  data$SpreadCat <-factor(data$SpreadCat, levels=labels, ordered = TRUE)
+  
+  return(data)
+}
+
+stocks <- factorize(stocks)
+
+table(stocks$DailyMoveCat)
+table(stocks$CloseDiffCat)
+table(stocks$ONDiffCat)
+table(stocks$SpreadCat)
 ```
 
 Finally here are just some histograms to visualize the data
 
 ```{r}
-hist(stock_train$Spread, breaks=50)
-hist(stock_train$DailyMove, breaks=50)
-hist(stock_train$CloseDiff, breaks=50)
-hist(stock_train$ONDiff, breaks=50)
+pdf(paste(imagesBase,"SpeadHist.pdf", sep = ""))
+hist(stocks$Spread, breaks=50)
+dev.off()
+
+pdf(paste(imagesBase,"DailyMoveHist.pdf", sep = ""))
+hist(stocks$DailyMove, breaks=50)
+dev.off()
+
+pdf(paste(imagesBase,"CloseDiffHist.pdf", sep = ""))
+hist(stocks$CloseDiff, breaks=50)
+dev.off()
+
+pdf(paste(imagesBase,"OverNightHist.pdf", sep = ""))
+hist(stocks$ONDiff, breaks=50)
+dev.off()
+```
+
+```{r}
+stock_labels = select(stocks, "Date","DailyMoveCat","CloseDiffCat","ONDiffCat","SpreadCat")
+stock_labels_chron <- stock_labels[seq(dim(stock_labels)[1],1),]
+write.csv(stock_labels_chron, saveFile, row.names = FALSE)
 ```
