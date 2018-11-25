@@ -164,5 +164,6 @@ dev.off()
 
 ```{r}
 stock_labels = select(stocks, "Date","DailyMoveCat","CloseDiffCat","ONDiffCat","SpreadCat")
-write.csv(stock_labels, saveFile, row.names = FALSE)
+stock_labels_chron <- stock_labels[seq(dim(stock_labels)[1],1),]
+write.csv(stock_labels_chron, saveFile, row.names = FALSE)
 ```

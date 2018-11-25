@@ -285,7 +285,8 @@ dev.off()</code></pre>
 <pre><code>## png 
 ##   2</code></pre>
 <pre class="r"><code>stock_labels = select(stocks, &quot;Date&quot;,&quot;DailyMoveCat&quot;,&quot;CloseDiffCat&quot;,&quot;ONDiffCat&quot;,&quot;SpreadCat&quot;)
-write.csv(stock_labels, saveFile, row.names = FALSE)</code></pre>
+stock_labels_chron &lt;- stock_labels[seq(dim(stock_labels)[1],1),]
+write.csv(stock_labels_chron, saveFile, row.names = FALSE)</code></pre>
 
 
 
