@@ -6,6 +6,7 @@ output: html_document
 Set the filename for your local file location
 
 ```{r}
+options("scipen"=100, "digits"=2)
 fileName <-"/home/dev/CSCD429_Project/Data/DJIA_table.csv"
 saveFile <-"/home/dev/CSCD429_Project/Data/DJIA_labels.csv"
 imagesBase <- "/home/dev/CSCD429_Project/Images/"
@@ -79,6 +80,7 @@ generateStats <- function(x){
 }
 
 stock_stats <- generateStats(stocks)
+stock_stats
 ```
 
 Now lets do some labeling of the movements and values. Right now these cuts are arbitrary, we should decice where and how we want to categorize
@@ -120,6 +122,7 @@ applyLabels <- function(data, stats){
 }
 
 stocks <- applyLabels(stocks, stock_stats)
+stocks[1:5,]
 ```
 
 

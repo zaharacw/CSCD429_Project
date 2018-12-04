@@ -126,7 +126,8 @@ $(document).ready(function () {
 
 
 <p>Set the filename for your local file location</p>
-<pre class="r"><code>fileName &lt;-&quot;/home/dev/CSCD429_Project/Data/DJIA_table.csv&quot;
+<pre class="r"><code>options(&quot;scipen&quot;=100, &quot;digits&quot;=2)
+fileName &lt;-&quot;/home/dev/CSCD429_Project/Data/DJIA_table.csv&quot;
 saveFile &lt;-&quot;/home/dev/CSCD429_Project/Data/DJIA_labels.csv&quot;
 imagesBase &lt;- &quot;/home/dev/CSCD429_Project/Images/&quot;</code></pre>
 <p>Read in the stock data and transform the Date column into actual dates</p>
@@ -188,7 +189,36 @@ stocks &lt;- dailyDiffs(stocks)</code></pre>
   return(stock_stats)
 }
 
-stock_stats &lt;- generateStats(stocks)</code></pre>
+stock_stats &lt;- generateStats(stocks)
+stock_stats</code></pre>
+<pre><code>##                              Name    StandardDev             Mean
+## Open                         Open     3143.28163     13459.116048
+## High                         High     3136.27173     13541.303173
+## Low                           Low     3150.42093     13372.931728
+## Close                       Close     3144.00700     13463.032255
+## Volume                     Volume 93923426.67612 162810970.336853
+## Adj.Close               Adj.Close     3144.00700     13463.032255
+## Spread                     Spread      112.22655       168.371445
+## DailyMove               DailyMove      141.22794        -3.916206
+## CloseDiff               CloseDiff      143.33115        -3.134453
+## ONDiff                     ONDiff        7.39611         0.642436
+## SpreadPercent       SpreadPercent        0.01160         0.013660
+## DailyMovePercent DailyMovePercent        0.01251        -0.000355
+## ONDiffPercent       ONDiffPercent        0.00048         0.000061
+##                            Median
+## Open                 13022.049805
+## High                 13088.110352
+## Low                  12953.129883
+## Close                13025.580078
+## Volume           135170000.000000
+## Adj.Close            13025.580078
+## Spread                 141.069336
+## DailyMove               -8.540039
+## CloseDiff               -7.219726
+## ONDiff                   0.160156
+## SpreadPercent            0.010446
+## DailyMovePercent        -0.000642
+## ONDiffPercent            0.000015</code></pre>
 <p>Now lets do some labeling of the movements and values. Right now these cuts are arbitrary, we should decice where and how we want to categorize</p>
 <pre class="r"><code>rownames(stock_stats) &lt;- stock_stats$Name
 
@@ -226,7 +256,26 @@ applyLabels &lt;- function(data, stats){
   return(data)
 }
 
-stocks &lt;- applyLabels(stocks, stock_stats)</code></pre>
+stocks &lt;- applyLabels(stocks, stock_stats)
+stocks[1:5,]</code></pre>
+<pre><code>##         Date  Open  High   Low Close    Volume Adj.Close Spread DailyMove
+## 1 2016-07-01 17924 18002 17917 17949  82160000     17949     85       -25
+## 2 2016-06-30 17713 17931 17712 17930 133030000     17930    219      -217
+## 3 2016-06-29 17456 17705 17456 17695 106380000     17695    248      -239
+## 4 2016-06-28 17191 17410 17191 17410 112190000     17410    219      -219
+## 5 2016-06-27 17355 17355 17063 17140 138740000     17140    292       215
+##   CloseDiff ONDiff SpreadPercent DailyMovePercent ONDiffPercent
+## 1       -19    5.8        0.0048          -0.0014       0.00032
+## 2      -235  -18.1        0.0124          -0.0123      -0.00102
+## 3      -285  -46.3        0.0143          -0.0137      -0.00266
+## 4      -269  -50.3        0.0128          -0.0128      -0.00293
+## 5       261   45.5        0.0168           0.0124       0.00262
+##   DailyMoveCat CloseDiffCat    ONDiffCat SpreadCat
+## 1         Down         Down           Up      Down
+## 2   Down Large   Down Large   Down Large        Up
+## 3   Down Large   Down Large Down Extreme        Up
+## 4   Down Large   Down Large Down Extreme        Up
+## 5     Up Large     Up Large   Up Extreme        Up</code></pre>
 <pre class="r"><code>factorize &lt;- function(data) {
   labels &lt;- c(&quot;Down Extreme&quot;, &quot;Down Large&quot;, &quot;Down&quot;, &quot;No Move&quot;, &quot;Up&quot;, &quot;Up Large&quot;, &quot;Up Extreme&quot;)
   data$DailyMoveCat &lt;-factor(data$DailyMoveCat, levels=labels, ordered = TRUE)
