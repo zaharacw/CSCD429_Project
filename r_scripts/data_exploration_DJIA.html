@@ -160,7 +160,7 @@ stocks &lt;- mutate(stocks, Date=as.Date(Date))</code></pre>
     x$ONDiff[i] &lt;- x$Close[i+1] - x$Open[i]
     x$SpreadPercent[i] &lt;- x$Spread[i] / x$Close[i+1]
     x$DailyMovePercent[i] &lt;- x$DailyMove[i] / x$Close[i+1]
-    x$CloseDiffPercent[i] &lt;- x$CloseDiffPercent[i] / x$Close[i+1]
+    x$CloseDiffPercent[i] &lt;- x$CloseDiff[i] / x$Close[i+1]
     x$ONDiffPercent[i] &lt;- x$ONDiff[i] / x$Close[i+1]
   }
   return(x)
@@ -204,6 +204,7 @@ stock_stats</code></pre>
 ## ONDiff                     ONDiff        7.39611         0.642436
 ## SpreadPercent       SpreadPercent        0.01160         0.013660
 ## DailyMovePercent DailyMovePercent        0.01251        -0.000355
+## CloseDiffPercent CloseDiffPercent        0.01265        -0.000294
 ## ONDiffPercent       ONDiffPercent        0.00048         0.000061
 ##                            Median
 ## Open                 13022.049805
@@ -218,6 +219,7 @@ stock_stats</code></pre>
 ## ONDiff                   0.160156
 ## SpreadPercent            0.010446
 ## DailyMovePercent        -0.000642
+## CloseDiffPercent        -0.000551
 ## ONDiffPercent            0.000015</code></pre>
 <p>Now lets do some labeling of the movements and values. Right now these cuts are arbitrary, we should decice where and how we want to categorize</p>
 <pre class="r"><code>rownames(stock_stats) &lt;- stock_stats$Name
@@ -264,18 +266,18 @@ stocks[1:5,]</code></pre>
 ## 3 2016-06-29 17456 17705 17456 17695 106380000     17695    248      -239
 ## 4 2016-06-28 17191 17410 17191 17410 112190000     17410    219      -219
 ## 5 2016-06-27 17355 17355 17063 17140 138740000     17140    292       215
-##   CloseDiff ONDiff SpreadPercent DailyMovePercent ONDiffPercent
-## 1       -19    5.8        0.0048          -0.0014       0.00032
-## 2      -235  -18.1        0.0124          -0.0123      -0.00102
-## 3      -285  -46.3        0.0143          -0.0137      -0.00266
-## 4      -269  -50.3        0.0128          -0.0128      -0.00293
-## 5       261   45.5        0.0168           0.0124       0.00262
-##   DailyMoveCat CloseDiffCat    ONDiffCat SpreadCat
-## 1         Down         Down           Up      Down
-## 2   Down Large   Down Large   Down Large        Up
-## 3   Down Large   Down Large Down Extreme        Up
-## 4   Down Large   Down Large Down Extreme        Up
-## 5     Up Large     Up Large   Up Extreme        Up</code></pre>
+##   CloseDiff ONDiff SpreadPercent DailyMovePercent CloseDiffPercent
+## 1       -19    5.8        0.0048          -0.0014          -0.0011
+## 2      -235  -18.1        0.0124          -0.0123          -0.0133
+## 3      -285  -46.3        0.0143          -0.0137          -0.0164
+## 4      -269  -50.3        0.0128          -0.0128          -0.0157
+## 5       261   45.5        0.0168           0.0124           0.0150
+##   ONDiffPercent DailyMoveCat CloseDiffCat    ONDiffCat SpreadCat
+## 1       0.00032         Down         Down           Up      Down
+## 2      -0.00102   Down Large   Down Large   Down Large        Up
+## 3      -0.00266   Down Large   Down Large Down Extreme        Up
+## 4      -0.00293   Down Large   Down Large Down Extreme        Up
+## 5       0.00262     Up Large     Up Large   Up Extreme        Up</code></pre>
 <pre class="r"><code>factorize &lt;- function(data) {
   labels &lt;- c(&quot;Down Extreme&quot;, &quot;Down Large&quot;, &quot;Down&quot;, &quot;No Move&quot;, &quot;Up&quot;, &quot;Up Large&quot;, &quot;Up Extreme&quot;)
   data$DailyMoveCat &lt;-factor(data$DailyMoveCat, levels=labels, ordered = TRUE)

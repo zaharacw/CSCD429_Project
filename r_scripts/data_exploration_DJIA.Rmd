@@ -47,7 +47,7 @@ dailyDiffs <- function(x) {
     x$ONDiff[i] <- x$Close[i+1] - x$Open[i]
     x$SpreadPercent[i] <- x$Spread[i] / x$Close[i+1]
     x$DailyMovePercent[i] <- x$DailyMove[i] / x$Close[i+1]
-    x$CloseDiffPercent[i] <- x$CloseDiffPercent[i] / x$Close[i+1]
+    x$CloseDiffPercent[i] <- x$CloseDiff[i] / x$Close[i+1]
     x$ONDiffPercent[i] <- x$ONDiff[i] / x$Close[i+1]
   }
   return(x)
